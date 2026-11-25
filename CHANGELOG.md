@@ -1,5 +1,11 @@
 # hippos-home-assistant-integration-manager
 
+## 0.1.2
+
+### Patch Changes
+
+- 1c599fc: Use the current Home Assistant device removal API when taking over a Marketplace integration.
+
 ## 0.1.1
 
 ### Patch Changes
