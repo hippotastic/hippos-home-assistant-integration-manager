@@ -1,6 +1,7 @@
 """Exercise GitHub routing, pinning and response validation without a network."""
 
 from contextlib import asynccontextmanager
+from dataclasses import replace
 import json
 from unittest import IsolatedAsyncioTestCase
 
@@ -38,20 +39,34 @@ class Session:
 class GitHubTests(IsolatedAsyncioTestCase):
     async def test_release_tag_resolves_annotated_tag_to_commit(self):
         tag_sha = "c" * 40
+        notes = "## Changes\n\n- Fixed update handling.\n"
         session = Session(
             Reply(200, payload={"full_name": REPOSITORY, "id": REPOSITORY_ID}),
-            Reply(200, payload={"tag_name": "v1.0.0", "draft": False, "prerelease": False}),
+            Reply(200, payload={
+                "tag_name": "v1.0.0", "draft": False, "prerelease": False, "body": notes,
+            }),
             Reply(200, payload={"object": {"type": "tag", "sha": tag_sha}}),
             Reply(200, payload={"object": {"type": "commit", "sha": FIRST.sha}}),
         )
         github = GitHub(session, f"https://github.com/{REPOSITORY.upper()}/", TOKEN)
         self.assertEqual(await github.repository_id(), REPOSITORY_ID)
-        self.assertEqual(await github.latest(""), FIRST)
+        self.assertEqual(await github.latest(""), replace(FIRST, notes=notes))
         self.assertEqual(session.calls[2][0].path, f"/repos/{REPOSITORY}/git/ref/tags/v1.0.0")
         for url, options in session.calls:
             self.assertEqual(url.host, "api.github.com")
             self.assertEqual(options["headers"]["Authorization"], f"Bearer {TOKEN}")
             self.assertFalse(options["allow_redirects"])
+
+    async def test_release_notes_are_optional(self):
+        for body in (None, " \n ", {"wrong": "type"}):
+            with self.subTest(body=body):
+                session = Session(
+                    Reply(200, payload={
+                        "tag_name": "v1.0.0", "draft": False, "prerelease": False, "body": body,
+                    }),
+                    Reply(200, payload={"object": {"type": "commit", "sha": FIRST.sha}}),
+                )
+                self.assertEqual(await GitHub(session, REPOSITORY, TOKEN).latest(""), FIRST)
 
     async def test_archive_redirect_never_receives_pat(self):
         redirect = f"https://codeload.github.com/{REPOSITORY}/legacy.zip/{FIRST.sha}?token=temporary"
@@ -88,10 +103,14 @@ class GitHubTests(IsolatedAsyncioTestCase):
             self.assertNotIn(TOKEN, str(error.exception))
 
     async def test_branch_slashes_are_encoded_as_part_of_the_ref(self):
-        session = Session(Reply(200, payload={"commit": {"sha": FIRST.sha}}))
+        message = "Fix package loading\n\nPreserve the existing settings."
+        session = Session(Reply(200, payload={
+            "commit": {"sha": FIRST.sha, "commit": {"message": message}},
+        }))
         revision = await GitHub(session, REPOSITORY, TOKEN).latest("feature/nightly")
         self.assertFalse(revision.stable)
         self.assertEqual(revision.sha, FIRST.sha)
+        self.assertEqual(revision.notes, message)
         self.assertTrue(session.calls[0][0].raw_path.endswith("/branches/feature%2Fnightly"))
         for branch in ("main~1", "foo/../main", "main@{0}", "bad//ref"):
             with self.subTest(branch=branch), self.assertRaises(ManagerError):

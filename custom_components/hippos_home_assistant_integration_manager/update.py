@@ -19,8 +19,6 @@ async def async_setup_entry(
 class IntegrationUpdate(CoordinatorEntity[ManagerCoordinator], UpdateEntity):
     """Offer releases or branch revisions already checked by the coordinator."""
 
-    _attr_supported_features = UpdateEntityFeature.INSTALL
-
     def __init__(self, coordinator: ManagerCoordinator, title: str) -> None:
         """Use the domain as the stable identity across repository revisions."""
         super().__init__(coordinator)
@@ -41,10 +39,18 @@ class IntegrationUpdate(CoordinatorEntity[ManagerCoordinator], UpdateEntity):
         return candidate.version if candidate is not None else self.installed_version
 
     @property
-    def release_url(self) -> str | None:
-        """Link to the selected GitHub release or commit."""
+    def supported_features(self) -> UpdateEntityFeature:
+        """Offer inline notes when the candidate includes them."""
         candidate = self.coordinator.data.candidate
-        return candidate.url if candidate is not None else None
+        features = UpdateEntityFeature.INSTALL
+        if candidate is not None and candidate.notes is not None:
+            features |= UpdateEntityFeature.RELEASE_NOTES
+        return features
+
+    async def async_release_notes(self) -> str | None:
+        """Return notes for the offered revision through Home Assistant's update API."""
+        candidate = self.coordinator.data.candidate
+        return candidate.notes if candidate is not None else None
 
     @property
     def auto_update(self) -> bool:
