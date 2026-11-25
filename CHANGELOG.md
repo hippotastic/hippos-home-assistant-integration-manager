@@ -1,5 +1,11 @@
 # hippos-home-assistant-integration-manager
 
+## 0.1.4
+
+### Patch Changes
+
+- 73804bb: Show release notes and development commit messages directly in the Home Assistant update dialog.
+
 ## 0.1.3
 
 ### Patch Changes
