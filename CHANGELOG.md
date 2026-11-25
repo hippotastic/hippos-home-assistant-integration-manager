@@ -1,5 +1,11 @@
 # hippos-home-assistant-integration-manager
 
+## 0.1.3
+
+### Patch Changes
+
+- cf5148c: Shorten the display name in Home Assistant and the Marketplace to Hippo's Integration Manager.
+
 ## 0.1.2
 
 ### Patch Changes
