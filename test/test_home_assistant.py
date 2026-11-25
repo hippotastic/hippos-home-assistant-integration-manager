@@ -218,6 +218,12 @@ class HomeAssistantTests(IsolatedAsyncioTestCase):
         self.assertTrue(repository.data.installed)
         self.assertIsNotNone(self.hass.states.get(old_update))
         market_device_id = er.async_get(self.hass).async_get(old_update).device_id
+        devices = dr.async_get(self.hass)
+        other_market_device = devices.async_get_or_create(
+            config_entry_id=self.market_entry.entry_id,
+            identifiers={("marketplace", str(REPOSITORY_ID + 1))},
+            name="Another Marketplace repository",
+        )
         result = await self.hass.config_entries.flow.async_configure(
             result["flow_id"], {"confirm": True}
         )
@@ -226,6 +232,8 @@ class HomeAssistantTests(IsolatedAsyncioTestCase):
         self.assertIs(managed.state, ConfigEntryState.LOADED, managed.reason)
         self.assertEqual(self.archive.await_count, 1)
         self.assertNotIn((DOMAIN, f"restart_{TARGET}"), ir.async_get(self.hass).issues)
+        self.assertIsNone(devices.async_get(market_device_id))
+        self.assertEqual(devices.async_get(other_market_device.id), other_market_device)
 
         await self._stop_home_assistant(self.hass)
         await self._boot_home_assistant()

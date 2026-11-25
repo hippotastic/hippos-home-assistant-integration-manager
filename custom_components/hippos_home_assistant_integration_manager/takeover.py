@@ -130,7 +130,9 @@ def _remove_marketplace_update(
             entities.async_remove(entity_id)
 
     devices = dr.async_get(hass)
+    # Device identifiers are unique within the owning config entry.
     for device in dr.async_entries_for_config_entry(devices, market_entry):
         if (MARKETPLACE, repository_id) in device.identifiers:
-            devices.async_update_device(device.id, remove_config_entry_id=market_entry)
+            devices.async_remove_device(device.id)
+            break
     ir.async_delete_issue(hass, MARKETPLACE, f"removed_{repository_id}")
