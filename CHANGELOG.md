@@ -1,5 +1,11 @@
 # hippos-home-assistant-integration-manager
 
+## 0.1.1
+
+### Patch Changes
+
+- Add an integration icon based on the Toolbox mascot.
+
 ## 0.1.0
 
 - Install custom integrations from GitHub and offer updates through Home Assistant.
