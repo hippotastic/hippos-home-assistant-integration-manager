@@ -162,6 +162,7 @@ class IntegrationManagerConfigFlow(ConfigFlow, domain=DOMAIN):
                     lambda: installer.install(
                         package, self._revision, adopt=exists and current is None, expected=current
                     ),
+                    first_install=not exists,
                 )
             except ManagerError as err:
                 return self.async_abort(reason=err.key)

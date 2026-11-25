@@ -11,7 +11,7 @@ Requires Home Assistant 2026.11 or later. Open **Settings → Marketplace → Ad
 1. Create a [fine-grained GitHub token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) for the selected repository with **Contents: Read-only**. Give each Home Assistant installation its own token so you can revoke access independently.
 2. In **Settings → Devices & services → Add integration**, choose **Hippo's Integration Manager** and enter the repository and token. Leave **Development branch** empty to use the default release mode.
 3. Review the integration and version in the confirmation dialog. For a Marketplace installation, use [Take over from Marketplace](#take-over-an-existing-installation) to keep the current version.
-4. If the manager installed new integration files, restart Home Assistant. Set up the installed integration normally if it is new.
+4. For a first install with a setup dialog, return to **Add integration** and set it up. If Home Assistant needs a restart, the manager shows a repair under **Settings → System → Repairs**.
 
 ### Version source
 

@@ -9,6 +9,8 @@ from unittest.mock import Mock, patch
 
 from aiohttp import ClientSession
 
+import custom_components
+
 from homeassistant import loader
 from homeassistant.auth.const import GROUP_ID_ADMIN, GROUP_ID_USER
 from homeassistant.bootstrap import async_from_config_dict
@@ -28,7 +30,7 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er, 
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.storage import WriteError
 
-from custom_components.hippos_home_assistant_integration_manager import config_flow, coordinator, takeover
+from custom_components.hippos_home_assistant_integration_manager import config_flow, coordinator, ha as manager_ha, takeover
 from custom_components.hippos_home_assistant_integration_manager.archive import read_packages
 from custom_components.hippos_home_assistant_integration_manager.const import CONF_MARKETPLACE_TAKEOVER, DOMAIN
 from custom_components.hippos_home_assistant_integration_manager.github import GitHub
@@ -145,6 +147,62 @@ class HomeAssistantTests(IsolatedAsyncioTestCase):
         await self.hass.async_block_till_done()
         self.assertIs(entry.state, ConfigEntryState.LOADED)
         return entry
+
+    async def test_fresh_config_flow_is_available_in_same_core_session(self):
+        target = "example_first_install"
+        self.target = self.target.with_name(target)
+        # The unittest runner imported the workspace namespace before Core mounted the test config.
+        self.enterContext(patch.object(custom_components, "__path__", [str(self.target.parent)]))
+        self.archive.side_effect = lambda sha: make_archive(
+            FIRST.version if sha == FIRST.sha else SECOND.version,
+            config_flow=True, domain=target,
+        )
+        self.assertNotIn(target, await loader.async_get_config_flows(self.hass))
+
+        manager_entry = await self._configure()
+        self.assertIn(target, await loader.async_get_config_flows(self.hass))
+        self.assertNotIn((DOMAIN, f"restart_{target}"), ir.async_get(self.hass).issues)
+
+        flow = self.hass.config_entries.flow
+        setup = await flow.async_init(target, context={"source": SOURCE_USER})
+        self.assertEqual(setup["type"], "form", setup)
+        setup = await flow.async_configure(setup["flow_id"], {})
+        self.assertEqual(setup["type"], "create_entry", setup)
+        await self.hass.async_block_till_done()
+        self.assertIs(setup["result"].state, ConfigEntryState.LOADED)
+
+        self.latest.return_value = SECOND
+        await manager_entry.runtime_data.async_refresh()
+        await manager_entry.runtime_data.async_install()
+        self.assertIn((DOMAIN, f"restart_{target}"), ir.async_get(self.hass).issues)
+
+    async def test_first_install_without_config_flow_requests_restart(self):
+        await self._configure()
+        self.assertNotIn(TARGET, await loader.async_get_config_flows(self.hass))
+        self.assertIn((DOMAIN, f"restart_{TARGET}"), ir.async_get(self.hass).issues)
+
+    async def test_first_install_requests_restart_if_discovery_fails(self):
+        self.archive.side_effect = None
+        self.archive.return_value = make_archive(FIRST.version, config_flow=True)
+        with (
+            patch.object(manager_ha, "async_get_custom_components", side_effect=OSError),
+            self.assertLogs(manager_ha.__name__, level="ERROR"),
+        ):
+            await self._configure()
+        self.assertTrue(self.target.is_dir())
+        self.assertIn((DOMAIN, f"restart_{TARGET}"), ir.async_get(self.hass).issues)
+
+    async def test_first_install_over_resolved_domain_requests_restart(self):
+        self.archive.side_effect = None
+        self.archive.return_value = make_archive(FIRST.version, config_flow=True)
+        with (
+            patch.object(manager_ha, "async_get_loaded_integration") as loaded,
+            patch.object(manager_ha, "async_get_custom_components") as discovery,
+        ):
+            await self._configure()
+        loaded.assert_called_once_with(self.hass, TARGET)
+        discovery.assert_not_awaited()
+        self.assertIn((DOMAIN, f"restart_{TARGET}"), ir.async_get(self.hass).issues)
 
     async def test_native_update_and_offline_rollback(self):
         entry = await self._configure()

@@ -3,6 +3,7 @@
 import asyncio
 from collections.abc import Callable
 from contextlib import nullcontext
+import logging
 
 from homeassistant.components.marketplace.base import MarketplaceManager
 from homeassistant.components.marketplace.repositories import RepositoryCategory
@@ -10,9 +11,18 @@ from homeassistant.components.marketplace.repositories.integration import Integr
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import issue_registry as ir
+from homeassistant.helpers.translation import async_invalidate_translations
+from homeassistant.loader import (
+    IntegrationNotLoaded,
+    async_clear_custom_components_cache,
+    async_get_custom_components,
+    async_get_loaded_integration,
+)
 
 from .const import DOMAIN
 from .models import Installation, ManagerError
+
+_LOGGER = logging.getLogger(__name__)
 
 
 @callback
@@ -58,22 +68,43 @@ def marketplace_owner(hass: HomeAssistant, domain: str) -> IntegrationRepository
 
 
 async def async_change_installation(
-    hass: HomeAssistant, domain: str, operation: Callable[[], Installation]
+    hass: HomeAssistant,
+    domain: str,
+    operation: Callable[[], Installation],
+    *,
+    first_install: bool = False,
 ) -> Installation:
-    """Serialize the disk exchange with the Marketplace and report a restart."""
+    """Serialize the disk exchange and make fresh UI integrations discoverable."""
     marketplace = marketplace_runtime(hass)
     # Core 2026.11 uses this lock for all Marketplace installation writes.
     async with marketplace.filesystem_lock if marketplace is not None else nullcontext():
         ensure_marketplace_released(hass, domain)
         job = hass.async_add_executor_job(operation)
+        restart_required = True
         try:
-            return await asyncio.shield(job)
+            installed = await asyncio.shield(job)
+            if first_install:
+                try:
+                    async_get_loaded_integration(hass, domain)
+                except IntegrationNotLoaded:
+                    # Refresh discovery without replacing code already resolved by Core.
+                    async_clear_custom_components_cache(hass)
+                    async_invalidate_translations(hass, {domain})
+                    try:
+                        integrations = await async_get_custom_components(hass)
+                        integration = integrations.get(domain)
+                        restart_required = integration is None or not integration.config_flow
+                    except Exception:
+                        _LOGGER.exception("Could not refresh discovery for %s", domain)
+                    finally:
+                        async_invalidate_translations(hass, {domain})
+            return installed
         except asyncio.CancelledError:
             # Keep the Marketplace lock until the executor has stopped writing.
             await job
             raise
         finally:
-            if job.done() and not job.cancelled() and job.exception() is None:
+            if restart_required and job.done() and not job.cancelled() and job.exception() is None:
                 ir.async_create_issue(
                     hass,
                     DOMAIN,
