@@ -1,5 +1,11 @@
 # hippos-home-assistant-integration-manager
 
+## 0.1.5
+
+### Patch Changes
+
+- 0789db4: Make newly installed integrations with a setup dialog available immediately after installation. Show a restart repair when Home Assistant cannot load the new integration in the current session.
+
 ## 0.1.4
 
 ### Patch Changes
