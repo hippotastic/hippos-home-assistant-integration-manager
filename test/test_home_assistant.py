@@ -1,10 +1,11 @@
 """Exercise production config flows and update actions in Home Assistant Core."""
 
+from dataclasses import replace
 from pathlib import Path
 import shutil
 from tempfile import TemporaryDirectory
 from unittest import IsolatedAsyncioTestCase
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from aiohttp import ClientSession
 
@@ -19,6 +20,7 @@ from homeassistant.components.marketplace.utils.storage import (
     async_load_from_storage,
     get_storage_for_key,
 )
+from homeassistant.components.update import UpdateEntityFeature, websocket_release_notes
 from homeassistant.config_entries import ConfigEntry, ConfigEntryState, SOURCE_RECONFIGURE, SOURCE_USER
 from homeassistant.core import Context, CoreState, HomeAssistant
 from homeassistant.exceptions import Unauthorized
@@ -196,6 +198,40 @@ class HomeAssistantTests(IsolatedAsyncioTestCase):
         result = await options.async_configure(result["flow_id"], {"next_step_id": "resume"})
         self.assertEqual(result["reason"], "resumed")
         self.assertEqual(self.hass.states.get(updates).state, "on")
+
+    async def test_release_notes_use_home_assistant_update_api(self):
+        entry = await self._configure()
+        updates = er.async_get(self.hass).async_get_entity_id("update", DOMAIN, TARGET)
+        admin = await self.hass.auth.async_create_user("Admin", group_ids=[GROUP_ID_ADMIN])
+        user = await self.hass.auth.async_create_user("User", group_ids=[GROUP_ID_USER])
+        connection = Mock(user=admin)
+        message = {"id": 1, "type": "update/release_notes", "entity_id": updates}
+        notes = "## Private release\n\n- Keep the existing settings."
+        self.latest.return_value = replace(SECOND, notes=notes)
+        await entry.runtime_data.async_refresh()
+
+        state = self.hass.states.get(updates)
+        self.assertEqual(state.state, "on")
+        self.assertIsNone(state.attributes["release_url"])
+        self.assertTrue(state.attributes["supported_features"] & UpdateEntityFeature.RELEASE_NOTES)
+        self.assertNotIn(notes, repr(state.attributes))
+        requests = (self.repository_id.await_count, self.latest.await_count, self.archive.await_count)
+        with self.assertRaises(Unauthorized):
+            websocket_release_notes(self.hass, Mock(user=user), message)
+        websocket_release_notes(self.hass, connection, message)
+        await self.hass.async_block_till_done()
+        connection.send_result.assert_called_once_with(1, notes)
+        self.assertEqual(
+            (self.repository_id.await_count, self.latest.await_count, self.archive.await_count),
+            requests,
+        )
+
+        self.latest.return_value = SECOND
+        await entry.runtime_data.async_refresh()
+        state = self.hass.states.get(updates)
+        self.assertEqual(state.state, "on")
+        self.assertIsNone(state.attributes["release_url"])
+        self.assertEqual(state.attributes["supported_features"], UpdateEntityFeature.INSTALL)
 
     async def test_confirmation_refuses_changed_repository_identity(self):
         result = await self._start_flow()

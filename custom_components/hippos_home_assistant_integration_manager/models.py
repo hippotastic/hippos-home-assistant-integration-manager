@@ -22,8 +22,8 @@ class Revision:
 
     sha: str
     version: str
-    url: str
     stable: bool
+    notes: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

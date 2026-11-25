@@ -10,8 +10,8 @@ DOMAIN = "example_extension"
 REPOSITORY = "example-owner/example-repository"
 REPOSITORY_ID = 12345
 TOKEN = "github_pat_" + "a" * 40
-FIRST = Revision("a" * 40, "1.0.0", f"https://github.com/{REPOSITORY}/releases/tag/v1.0.0", True)
-SECOND = Revision("b" * 40, "1.1.0", f"https://github.com/{REPOSITORY}/releases/tag/v1.1.0", True)
+FIRST = Revision("a" * 40, "1.0.0", stable=True)
+SECOND = Revision("b" * 40, "1.1.0", stable=True)
 
 
 def make_archive(version: str, extras: tuple = (), *, root_layout: bool = False) -> bytes:

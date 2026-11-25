@@ -24,6 +24,8 @@ The manager installs the selected `custom_components/<domain>/` tree. A reposito
 
 The manager checks daily by default. Use **Check for updates** on the config entry for an immediate check. Install an offered revision in Home Assistant's update view. HA shows a repair when you need to restart to load the new code.
 
+Home Assistant admins can read the GitHub release notes directly in the update dialog with their Home Assistant login. In development branch mode, the dialog shows the commit message instead.
+
 Use the config entry's options to change the check interval, select a development branch, or enable automatic installation of stable releases. The first check after startup, options changes, or resuming updates only reports the available version.
 
 To rotate a GitHub token, choose **Reconfigure** from the config entry menu. Home Assistant also offers reauthentication if GitHub rejects the existing token.

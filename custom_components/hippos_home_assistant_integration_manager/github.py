@@ -47,6 +47,11 @@ def normalize_branch(value: str) -> str:
     return branch
 
 
+def _optional_notes(value: object) -> str | None:
+    """Keep Markdown formatting and ignore absent or blank notes."""
+    return value if isinstance(value, str) and value.strip() else None
+
+
 class GitHub:
     """Use a repository-scoped fine-grained token for GitHub API requests."""
 
@@ -58,7 +63,6 @@ class GitHub:
         self._session = session
         self._token = token.strip()
         self._api_path = f"/repos/{self.repository}"
-        self._web_url = f"https://github.com/{self.repository}"
 
     @asynccontextmanager
     async def _request(self, url: URL, *, authenticated: bool):
@@ -148,10 +152,19 @@ class GitHub:
                 f"/branches/{quote(branch, safe='')}", missing="branch_missing"
             )
             commit = branch_info.get("commit")
-            sha = commit.get("sha") if isinstance(commit, dict) else None
-            if not isinstance(sha, str) or SHA_PATTERN.fullmatch(sha) is None:
+            if (
+                not isinstance(commit, dict)
+                or not isinstance(sha := commit.get("sha"), str)
+                or SHA_PATTERN.fullmatch(sha) is None
+            ):
                 raise ManagerError("invalid_response")
-            return Revision(sha, f"{branch}@{sha[:12]}", f"{self._web_url}/commit/{sha}", False)
+            details = commit.get("commit")
+            return Revision(
+                sha,
+                f"{branch}@{sha[:12]}",
+                stable=False,
+                notes=_optional_notes(details.get("message") if isinstance(details, dict) else None),
+            )
 
         release = await self._json("/releases/latest", missing="release_missing")
         tag = release.get("tag_name")
@@ -171,7 +184,10 @@ class GitHub:
                 break
             if target.get("type") == "commit":
                 return Revision(
-                    sha, tag.removeprefix("v"), f"{self._web_url}/releases/tag/{tag}", True
+                    sha,
+                    tag.removeprefix("v"),
+                    stable=True,
+                    notes=_optional_notes(release.get("body")),
                 )
             if target.get("type") != "tag":
                 break
