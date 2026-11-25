@@ -1,6 +1,6 @@
 {
   "domain": "hippos_home_assistant_integration_manager",
-  "name": "Hippo's Home Assistant Integration Manager",
+  "name": "Hippo's Integration Manager",
   "after_dependencies": [
     "marketplace"
   ],
