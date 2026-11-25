@@ -1,0 +1,19 @@
+{
+  "name": "hippos-home-assistant-integration-manager",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "changeset": "changeset",
+    "validate": "pnpm validate:layout && pnpm validate:hassfest && pnpm test:ha",
+    "validate:layout": "node tools/validate-layout.mjs",
+    "validate:hassfest": "sh tools/validate-in-container.sh hassfest",
+    "test:ha": "sh tools/validate-in-container.sh test",
+    "release:publish": "changeset publish",
+    "release:version": "changeset version && node tools/sync-version.mjs"
+  },
+  "packageManager": "pnpm@10.6.1",
+  "devDependencies": {
+    "@changesets/cli": "^2.29.8"
+  }
+}

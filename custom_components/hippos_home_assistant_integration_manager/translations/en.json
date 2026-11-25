@@ -1,0 +1,297 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect a GitHub repository",
+        "data": {
+          "repository": "GitHub repository",
+          "token": "Read-only GitHub token",
+          "branch": "Development branch"
+        },
+        "data_description": {
+          "branch": "Leave blank to use stable releases."
+        }
+      },
+      "select": {
+        "title": "Select an integration",
+        "data": {
+          "integration": "Integration"
+        }
+      },
+      "confirm": {
+        "title": "Install integration",
+        "description": "{integration} ({domain}) from {repository}, version {version}, commit {commit}.\n\nExisting directory to take over and replace: {existing}. Home Assistant keeps the existing integration configuration.",
+        "data": {
+          "confirm": "Confirm installation"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Replace GitHub token",
+        "description": "Enter a new read-only token for {repository}.",
+        "data": {
+          "token": "Read-only GitHub token"
+        }
+      },
+      "reconfigure": {
+        "title": "Replace GitHub token",
+        "description": "Enter a new read-only token for {repository}.",
+        "data": {
+          "token": "Read-only GitHub token"
+        }
+      },
+      "takeover": {
+        "title": "Take over from Marketplace",
+        "description": "{integration} {version} is installed through {marketplace_repository}. Keep this version and its Home Assistant setup, and use {repository} for future updates.",
+        "data": {
+          "confirm": "Take over from Marketplace"
+        }
+      }
+    },
+    "error": {
+      "branch_missing": "GitHub did not find this branch.",
+      "cannot_connect": "Could not complete the GitHub request.",
+      "domain_mismatch": "The manifest domain does not match the integration directory.",
+      "download_too_large": "The GitHub response exceeds the download limit.",
+      "integration_missing": "The archive does not contain the selected integration.",
+      "invalid_archive": "GitHub did not return a readable ZIP archive.",
+      "invalid_branch": "Enter a valid Git branch name.",
+      "invalid_download_redirect": "GitHub returned an unexpected archive download address.",
+      "invalid_manifest": "The integration needs a valid manifest and an __init__.py file.",
+      "invalid_release": "A stable release needs a tag such as v1.2.3 pointing to a commit.",
+      "invalid_repository": "Enter owner/repository or a GitHub repository link.",
+      "invalid_response": "GitHub returned an unexpected response.",
+      "invalid_token": "Enter a valid fine-grained GitHub personal access token.",
+      "protected_domain": "This integration domain is reserved.",
+      "rate_limited": "GitHub has limited requests. Try again later.",
+      "release_missing": "There is no published stable release, or the token cannot read it.",
+      "repository_changed": "The GitHub repository identity has changed.",
+      "repository_inaccessible": "The token cannot access this GitHub repository.",
+      "unsafe_archive": "The archive contains an unsafe path, file type, or size.",
+      "home_assistant_too_old": "This release requires a newer version of Home Assistant.",
+      "invalid_repository_metadata": "The repository contains an invalid hacs.json file.",
+      "persistent_directory_unsupported": "This repository needs to preserve files inside the integration directory."
+    },
+    "abort": {
+      "already_configured": "This integration is already managed.",
+      "already_in_progress": "Setup is already in progress.",
+      "reauth_successful": "GitHub token updated.",
+      "branch_missing": "GitHub did not find this branch.",
+      "cannot_connect": "Could not complete the GitHub request.",
+      "domain_mismatch": "The manifest domain does not match the integration directory.",
+      "download_too_large": "The GitHub response exceeds the download limit.",
+      "filesystem_error": "Could not write or recover the integration files.",
+      "installation_changed": "The installation changed. Reopen the dialog and check the current version.",
+      "installation_owned": "This directory is already in use by another installation.",
+      "integration_missing": "The archive does not contain the selected integration.",
+      "invalid_archive": "GitHub did not return a readable ZIP archive.",
+      "invalid_download_redirect": "GitHub returned an unexpected archive download address.",
+      "invalid_manifest": "The integration needs a valid manifest and an __init__.py file.",
+      "invalid_release": "A stable release needs a tag such as v1.2.3 pointing to a commit.",
+      "invalid_response": "GitHub returned an unexpected response.",
+      "invalid_token": "Enter a valid fine-grained GitHub personal access token.",
+      "marketplace_owned": "The Marketplace still manages this integration. Resolve its ownership before continuing.",
+      "marketplace_unavailable": "The Marketplace installation list is unavailable. Try again when the Marketplace is running.",
+      "protected_domain": "This integration domain is reserved.",
+      "rate_limited": "GitHub has limited requests. Try again later.",
+      "release_missing": "There is no published stable release, or the token cannot read it.",
+      "repository_changed": "The GitHub repository identity has changed.",
+      "repository_inaccessible": "The token cannot access this GitHub repository.",
+      "unsafe_archive": "The archive contains an unsafe path, file type, or size.",
+      "unsafe_installation": "The installation directory or its saved metadata could not be trusted.",
+      "version_mismatch": "The version in the manifest must match the GitHub release tag.",
+      "reconfigure_successful": "GitHub token updated.",
+      "home_assistant_too_old": "This release requires a newer version of Home Assistant.",
+      "invalid_repository_metadata": "The repository contains an invalid hacs.json file.",
+      "persistent_directory_unsupported": "This repository needs to preserve files inside the integration directory.",
+      "marketplace_ambiguous": "Several Marketplace repositories claim this integration. Resolve the conflicting installations before taking over.",
+      "marketplace_busy": "The Marketplace is installing this integration. Try again after it finishes.",
+      "marketplace_save_failed": "Could not save the Marketplace handover. The existing integration files and setup are intact."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Manage installation",
+        "menu_options": {
+          "settings": "Update settings",
+          "rollback": "Restore previous version",
+          "resume": "Resume update checks"
+        }
+      },
+      "settings": {
+        "title": "Update settings",
+        "data": {
+          "branch": "Development branch",
+          "interval": "Check interval",
+          "auto_install": "Install stable updates automatically"
+        },
+        "data_description": {
+          "branch": "Leave blank to use stable releases."
+        }
+      },
+      "rollback": {
+        "title": "Restore previous version",
+        "description": "Restore version {version} and pause updates until you resume them. Restart Home Assistant to load the restored code.",
+        "data": {
+          "confirm": "Confirm rollback"
+        }
+      }
+    },
+    "error": {
+      "automatic_requires_stable_polling": "Automatic installation requires stable releases and a check interval.",
+      "branch_missing": "GitHub did not find this branch.",
+      "cannot_connect": "Could not complete the GitHub request.",
+      "invalid_branch": "Enter a valid Git branch name.",
+      "invalid_release": "A stable release needs a tag such as v1.2.3 pointing to a commit.",
+      "invalid_response": "GitHub returned an unexpected response.",
+      "invalid_token": "Enter a valid fine-grained GitHub personal access token.",
+      "rate_limited": "GitHub has limited requests. Try again later.",
+      "release_missing": "There is no published stable release, or the token cannot read it.",
+      "repository_changed": "The GitHub repository identity has changed.",
+      "repository_inaccessible": "The token cannot access this GitHub repository."
+    },
+    "abort": {
+      "rolled_back": "The previous version was restored. Restart Home Assistant to load it.",
+      "resumed": "Update checks have resumed.",
+      "filesystem_error": "Could not write or recover the integration files.",
+      "installation_changed": "The installation changed. Reopen the dialog and check the current version.",
+      "installation_owned": "This directory is already in use by another installation.",
+      "marketplace_owned": "The Marketplace still manages this integration. Resolve its ownership before continuing.",
+      "marketplace_unavailable": "The Marketplace installation list is unavailable. Try again when the Marketplace is running.",
+      "rollback_unavailable": "There is no previous managed version to restore.",
+      "unsafe_installation": "The installation directory or its saved metadata could not be trusted."
+    }
+  },
+  "selector": {
+    "check_interval": {
+      "options": {
+        "0": "Manual",
+        "1": "Hourly",
+        "6": "Every 6 hours",
+        "12": "Every 12 hours",
+        "24": "Daily",
+        "168": "Weekly"
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "check_updates": {
+        "name": "Check for updates"
+      }
+    }
+  },
+  "issues": {
+    "restart_required": {
+      "title": "Restart to load {integration}",
+      "description": "Restart Home Assistant to load the installed version of {integration}."
+    }
+  },
+  "exceptions": {
+    "automatic_requires_stable_polling": {
+      "message": "Automatic installation requires stable releases and a check interval."
+    },
+    "branch_missing": {
+      "message": "GitHub did not find this branch."
+    },
+    "cannot_connect": {
+      "message": "Could not complete the GitHub request."
+    },
+    "domain_mismatch": {
+      "message": "The manifest domain does not match the integration directory."
+    },
+    "download_too_large": {
+      "message": "The GitHub response exceeds the download limit."
+    },
+    "filesystem_error": {
+      "message": "Could not write or recover the integration files."
+    },
+    "installation_changed": {
+      "message": "The installation changed. Reopen the dialog and check the current version."
+    },
+    "installation_owned": {
+      "message": "This directory is already in use by another installation."
+    },
+    "integration_missing": {
+      "message": "The archive does not contain the selected integration."
+    },
+    "invalid_archive": {
+      "message": "GitHub did not return a readable ZIP archive."
+    },
+    "invalid_branch": {
+      "message": "Enter a valid Git branch name."
+    },
+    "invalid_download_redirect": {
+      "message": "GitHub returned an unexpected archive download address."
+    },
+    "invalid_manifest": {
+      "message": "The integration needs a valid manifest and an __init__.py file."
+    },
+    "invalid_release": {
+      "message": "A stable release needs a tag such as v1.2.3 pointing to a commit."
+    },
+    "invalid_repository": {
+      "message": "Enter owner/repository or a GitHub repository link."
+    },
+    "invalid_response": {
+      "message": "GitHub returned an unexpected response."
+    },
+    "invalid_token": {
+      "message": "Enter a valid fine-grained GitHub personal access token."
+    },
+    "marketplace_owned": {
+      "message": "The Marketplace still manages this integration. Resolve its ownership before continuing."
+    },
+    "marketplace_unavailable": {
+      "message": "The Marketplace installation list is unavailable. Try again when the Marketplace is running."
+    },
+    "no_update": {
+      "message": "No update is available to install."
+    },
+    "protected_domain": {
+      "message": "This integration domain is reserved."
+    },
+    "rate_limited": {
+      "message": "GitHub has limited requests. Try again later."
+    },
+    "release_missing": {
+      "message": "There is no published stable release, or the token cannot read it."
+    },
+    "repository_changed": {
+      "message": "The GitHub repository identity has changed."
+    },
+    "repository_inaccessible": {
+      "message": "The token cannot access this GitHub repository."
+    },
+    "rollback_unavailable": {
+      "message": "There is no previous managed version to restore."
+    },
+    "unsafe_archive": {
+      "message": "The archive contains an unsafe path, file type, or size."
+    },
+    "unsafe_installation": {
+      "message": "The installation directory or its saved metadata could not be trusted."
+    },
+    "version_mismatch": {
+      "message": "The version in the manifest must match the GitHub release tag."
+    },
+    "home_assistant_too_old": {
+      "message": "This release requires a newer version of Home Assistant."
+    },
+    "invalid_repository_metadata": {
+      "message": "The repository contains an invalid hacs.json file."
+    },
+    "persistent_directory_unsupported": {
+      "message": "This repository needs to preserve files inside the integration directory."
+    },
+    "marketplace_ambiguous": {
+      "message": "Several Marketplace repositories claim this integration. Resolve the conflicting installations before taking over."
+    },
+    "marketplace_busy": {
+      "message": "The Marketplace is installing this integration. Try again after it finishes."
+    },
+    "marketplace_save_failed": {
+      "message": "Could not save the Marketplace handover. The existing integration files and setup are intact."
+    }
+  }
+}

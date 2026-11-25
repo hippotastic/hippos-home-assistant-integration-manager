@@ -1,0 +1,297 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "GitHub-Repository verbinden",
+        "data": {
+          "repository": "GitHub-Repository",
+          "token": "GitHub-Token mit Lesezugriff",
+          "branch": "Entwicklungsbranch"
+        },
+        "data_description": {
+          "branch": "Für stabile Releases leer lassen."
+        }
+      },
+      "select": {
+        "title": "Integration auswählen",
+        "data": {
+          "integration": "Integration"
+        }
+      },
+      "confirm": {
+        "title": "Integration installieren",
+        "description": "{integration} ({domain}) aus {repository}, Version {version}, Commit {commit}.\n\nVorhandenes Verzeichnis zur Übernahme und Ersetzung: {existing}. Home Assistant behält die bestehende Integrationskonfiguration.",
+        "data": {
+          "confirm": "Installation bestätigen"
+        }
+      },
+      "reauth_confirm": {
+        "title": "GitHub-Token ersetzen",
+        "description": "Gib einen neuen Token mit Lesezugriff für {repository} ein.",
+        "data": {
+          "token": "GitHub-Token mit Lesezugriff"
+        }
+      },
+      "reconfigure": {
+        "title": "GitHub-Token ersetzen",
+        "description": "Gib einen neuen Token mit Lesezugriff für {repository} ein.",
+        "data": {
+          "token": "GitHub-Token mit Lesezugriff"
+        }
+      },
+      "takeover": {
+        "title": "Vom Marketplace übernehmen",
+        "description": "{integration} {version} ist über {marketplace_repository} installiert. Übernimm diese Version mit ihrer bestehenden Home-Assistant-Einrichtung und verwende {repository} für künftige Updates.",
+        "data": {
+          "confirm": "Vom Marketplace übernehmen"
+        }
+      }
+    },
+    "error": {
+      "branch_missing": "GitHub hat diesen Branch nicht gefunden.",
+      "cannot_connect": "Die GitHub-Anfrage konnte nicht abgeschlossen werden.",
+      "domain_mismatch": "Die Domain im Manifest passt nicht zum Integrationsverzeichnis.",
+      "download_too_large": "Die GitHub-Antwort überschreitet das Download-Limit.",
+      "integration_missing": "Das Archiv enthält die ausgewählte Integration nicht.",
+      "invalid_archive": "GitHub hat kein lesbares ZIP-Archiv geliefert.",
+      "invalid_branch": "Gib einen gültigen Git-Branch-Namen ein.",
+      "invalid_download_redirect": "GitHub hat eine unerwartete Download-Adresse für das Archiv geliefert.",
+      "invalid_manifest": "Die Integration benötigt ein gültiges Manifest und eine Datei __init__.py.",
+      "invalid_release": "Ein stabiles Release benötigt ein Tag wie v1.2.3, das auf einen Commit verweist.",
+      "invalid_repository": "Gib owner/repository oder einen GitHub-Repository-Link ein.",
+      "invalid_response": "GitHub hat eine unerwartete Antwort geliefert.",
+      "invalid_token": "Gib einen gültigen Fine-grained Personal Access Token von GitHub ein.",
+      "protected_domain": "Diese Integrations-Domain ist reserviert.",
+      "rate_limited": "GitHub hat die Anfragen begrenzt. Versuche es später erneut.",
+      "release_missing": "Es gibt kein veröffentlichtes stabiles Release oder der Token kann es nicht lesen.",
+      "repository_changed": "Die Identität des GitHub-Repositorys hat sich geändert.",
+      "repository_inaccessible": "Der Token hat keinen Zugriff auf dieses GitHub-Repository.",
+      "unsafe_archive": "Das Archiv enthält einen unsicheren Pfad, Dateityp oder eine unzulässige Größe.",
+      "home_assistant_too_old": "Dieses Release benötigt eine neuere Version von Home Assistant.",
+      "invalid_repository_metadata": "Das Repository enthält eine ungültige hacs.json-Datei.",
+      "persistent_directory_unsupported": "Dieses Repository benötigt ein dauerhaftes Verzeichnis innerhalb des Integrationsordners."
+    },
+    "abort": {
+      "already_configured": "Diese Integration wird bereits verwaltet.",
+      "already_in_progress": "Die Einrichtung läuft bereits.",
+      "reauth_successful": "GitHub-Token aktualisiert.",
+      "branch_missing": "GitHub hat diesen Branch nicht gefunden.",
+      "cannot_connect": "Die GitHub-Anfrage konnte nicht abgeschlossen werden.",
+      "domain_mismatch": "Die Domain im Manifest passt nicht zum Integrationsverzeichnis.",
+      "download_too_large": "Die GitHub-Antwort überschreitet das Download-Limit.",
+      "filesystem_error": "Die Integrationsdateien konnten nicht geschrieben oder wiederhergestellt werden.",
+      "installation_changed": "Die Installation hat sich geändert. Öffne den Dialog erneut und prüfe die aktuelle Version.",
+      "installation_owned": "Dieses Verzeichnis wird bereits von einer anderen Installation verwendet.",
+      "integration_missing": "Das Archiv enthält die ausgewählte Integration nicht.",
+      "invalid_archive": "GitHub hat kein lesbares ZIP-Archiv geliefert.",
+      "invalid_download_redirect": "GitHub hat eine unerwartete Download-Adresse für das Archiv geliefert.",
+      "invalid_manifest": "Die Integration benötigt ein gültiges Manifest und eine Datei __init__.py.",
+      "invalid_release": "Ein stabiles Release benötigt ein Tag wie v1.2.3, das auf einen Commit verweist.",
+      "invalid_response": "GitHub hat eine unerwartete Antwort geliefert.",
+      "invalid_token": "Gib einen gültigen Fine-grained Personal Access Token von GitHub ein.",
+      "marketplace_owned": "Der Marketplace verwaltet diese Integration noch. Kläre zuerst die Zuständigkeit.",
+      "marketplace_unavailable": "Die Installationsliste ist nicht verfügbar. Versuche es erneut, sobald der Marketplace läuft.",
+      "protected_domain": "Diese Integrations-Domain ist reserviert.",
+      "rate_limited": "GitHub hat die Anfragen begrenzt. Versuche es später erneut.",
+      "release_missing": "Es gibt kein veröffentlichtes stabiles Release oder der Token kann es nicht lesen.",
+      "repository_changed": "Die Identität des GitHub-Repositorys hat sich geändert.",
+      "repository_inaccessible": "Der Token hat keinen Zugriff auf dieses GitHub-Repository.",
+      "unsafe_archive": "Das Archiv enthält einen unsicheren Pfad, Dateityp oder eine unzulässige Größe.",
+      "unsafe_installation": "Das Installationsverzeichnis oder seine gespeicherten Daten konnten nicht geprüft werden.",
+      "version_mismatch": "Die Version im Manifest muss dem GitHub-Release-Tag entsprechen.",
+      "reconfigure_successful": "GitHub-Token aktualisiert.",
+      "home_assistant_too_old": "Dieses Release benötigt eine neuere Version von Home Assistant.",
+      "invalid_repository_metadata": "Das Repository enthält eine ungültige hacs.json-Datei.",
+      "persistent_directory_unsupported": "Dieses Repository benötigt ein dauerhaftes Verzeichnis innerhalb des Integrationsordners.",
+      "marketplace_ambiguous": "Mehrere Marketplace-Repositories verwalten diese Integration. Kläre den Konflikt vor der Übernahme.",
+      "marketplace_busy": "Der Marketplace installiert diese Integration gerade. Versuche es nach Abschluss erneut.",
+      "marketplace_save_failed": "Die Marketplace-Übernahme konnte nicht gespeichert werden. Die Integrationsdateien und die Einrichtung sind weiterhin vorhanden."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Installation verwalten",
+        "menu_options": {
+          "settings": "Update-Einstellungen",
+          "rollback": "Vorherige Version wiederherstellen",
+          "resume": "Update-Prüfungen fortsetzen"
+        }
+      },
+      "settings": {
+        "title": "Update-Einstellungen",
+        "data": {
+          "branch": "Entwicklungsbranch",
+          "interval": "Prüfintervall",
+          "auto_install": "Stabile Updates automatisch installieren"
+        },
+        "data_description": {
+          "branch": "Für stabile Releases leer lassen."
+        }
+      },
+      "rollback": {
+        "title": "Vorherige Version wiederherstellen",
+        "description": "Stelle Version {version} wieder her und pausiere Updates, bis du sie fortsetzt. Starte Home Assistant neu, um den wiederhergestellten Code zu laden.",
+        "data": {
+          "confirm": "Rollback bestätigen"
+        }
+      }
+    },
+    "error": {
+      "automatic_requires_stable_polling": "Die automatische Installation benötigt stabile Releases und ein Prüfintervall.",
+      "branch_missing": "GitHub hat diesen Branch nicht gefunden.",
+      "cannot_connect": "Die GitHub-Anfrage konnte nicht abgeschlossen werden.",
+      "invalid_branch": "Gib einen gültigen Git-Branch-Namen ein.",
+      "invalid_release": "Ein stabiles Release benötigt ein Tag wie v1.2.3, das auf einen Commit verweist.",
+      "invalid_response": "GitHub hat eine unerwartete Antwort geliefert.",
+      "invalid_token": "Gib einen gültigen Fine-grained Personal Access Token von GitHub ein.",
+      "rate_limited": "GitHub hat die Anfragen begrenzt. Versuche es später erneut.",
+      "release_missing": "Es gibt kein veröffentlichtes stabiles Release oder der Token kann es nicht lesen.",
+      "repository_changed": "Die Identität des GitHub-Repositorys hat sich geändert.",
+      "repository_inaccessible": "Der Token hat keinen Zugriff auf dieses GitHub-Repository."
+    },
+    "abort": {
+      "rolled_back": "Die vorherige Version ist wiederhergestellt. Starte Home Assistant neu, um sie zu laden.",
+      "resumed": "Die Update-Prüfungen wurden fortgesetzt.",
+      "filesystem_error": "Die Integrationsdateien konnten nicht geschrieben oder wiederhergestellt werden.",
+      "installation_changed": "Die Installation hat sich geändert. Öffne den Dialog erneut und prüfe die aktuelle Version.",
+      "installation_owned": "Dieses Verzeichnis wird bereits von einer anderen Installation verwendet.",
+      "marketplace_owned": "Der Marketplace verwaltet diese Integration noch. Kläre zuerst die Zuständigkeit.",
+      "marketplace_unavailable": "Die Installationsliste ist nicht verfügbar. Versuche es erneut, sobald der Marketplace läuft.",
+      "rollback_unavailable": "Es gibt keine vorherige verwaltete Version zur Wiederherstellung.",
+      "unsafe_installation": "Das Installationsverzeichnis oder seine gespeicherten Daten konnten nicht geprüft werden."
+    }
+  },
+  "selector": {
+    "check_interval": {
+      "options": {
+        "0": "Manuell",
+        "1": "Stündlich",
+        "6": "Alle 6 Stunden",
+        "12": "Alle 12 Stunden",
+        "24": "Täglich",
+        "168": "Wöchentlich"
+      }
+    }
+  },
+  "entity": {
+    "button": {
+      "check_updates": {
+        "name": "Auf Updates prüfen"
+      }
+    }
+  },
+  "issues": {
+    "restart_required": {
+      "title": "Neustart zum Laden von {integration}",
+      "description": "Starte Home Assistant neu, um die installierte Version von {integration} zu laden."
+    }
+  },
+  "exceptions": {
+    "automatic_requires_stable_polling": {
+      "message": "Die automatische Installation benötigt stabile Releases und ein Prüfintervall."
+    },
+    "branch_missing": {
+      "message": "GitHub hat diesen Branch nicht gefunden."
+    },
+    "cannot_connect": {
+      "message": "Die GitHub-Anfrage konnte nicht abgeschlossen werden."
+    },
+    "domain_mismatch": {
+      "message": "Die Domain im Manifest passt nicht zum Integrationsverzeichnis."
+    },
+    "download_too_large": {
+      "message": "Die GitHub-Antwort überschreitet das Download-Limit."
+    },
+    "filesystem_error": {
+      "message": "Die Integrationsdateien konnten nicht geschrieben oder wiederhergestellt werden."
+    },
+    "installation_changed": {
+      "message": "Die Installation hat sich geändert. Öffne den Dialog erneut und prüfe die aktuelle Version."
+    },
+    "installation_owned": {
+      "message": "Dieses Verzeichnis wird bereits von einer anderen Installation verwendet."
+    },
+    "integration_missing": {
+      "message": "Das Archiv enthält die ausgewählte Integration nicht."
+    },
+    "invalid_archive": {
+      "message": "GitHub hat kein lesbares ZIP-Archiv geliefert."
+    },
+    "invalid_branch": {
+      "message": "Gib einen gültigen Git-Branch-Namen ein."
+    },
+    "invalid_download_redirect": {
+      "message": "GitHub hat eine unerwartete Download-Adresse für das Archiv geliefert."
+    },
+    "invalid_manifest": {
+      "message": "Die Integration benötigt ein gültiges Manifest und eine Datei __init__.py."
+    },
+    "invalid_release": {
+      "message": "Ein stabiles Release benötigt ein Tag wie v1.2.3, das auf einen Commit verweist."
+    },
+    "invalid_repository": {
+      "message": "Gib owner/repository oder einen GitHub-Repository-Link ein."
+    },
+    "invalid_response": {
+      "message": "GitHub hat eine unerwartete Antwort geliefert."
+    },
+    "invalid_token": {
+      "message": "Gib einen gültigen Fine-grained Personal Access Token von GitHub ein."
+    },
+    "marketplace_owned": {
+      "message": "Der Marketplace verwaltet diese Integration noch. Kläre zuerst die Zuständigkeit."
+    },
+    "marketplace_unavailable": {
+      "message": "Die Installationsliste ist nicht verfügbar. Versuche es erneut, sobald der Marketplace läuft."
+    },
+    "no_update": {
+      "message": "Es steht kein Update zur Installation bereit."
+    },
+    "protected_domain": {
+      "message": "Diese Integrations-Domain ist reserviert."
+    },
+    "rate_limited": {
+      "message": "GitHub hat die Anfragen begrenzt. Versuche es später erneut."
+    },
+    "release_missing": {
+      "message": "Es gibt kein veröffentlichtes stabiles Release oder der Token kann es nicht lesen."
+    },
+    "repository_changed": {
+      "message": "Die Identität des GitHub-Repositorys hat sich geändert."
+    },
+    "repository_inaccessible": {
+      "message": "Der Token hat keinen Zugriff auf dieses GitHub-Repository."
+    },
+    "rollback_unavailable": {
+      "message": "Es gibt keine vorherige verwaltete Version zur Wiederherstellung."
+    },
+    "unsafe_archive": {
+      "message": "Das Archiv enthält einen unsicheren Pfad, Dateityp oder eine unzulässige Größe."
+    },
+    "unsafe_installation": {
+      "message": "Das Installationsverzeichnis oder seine gespeicherten Daten konnten nicht geprüft werden."
+    },
+    "version_mismatch": {
+      "message": "Die Version im Manifest muss dem GitHub-Release-Tag entsprechen."
+    },
+    "home_assistant_too_old": {
+      "message": "Dieses Release benötigt eine neuere Version von Home Assistant."
+    },
+    "invalid_repository_metadata": {
+      "message": "Das Repository enthält eine ungültige hacs.json-Datei."
+    },
+    "persistent_directory_unsupported": {
+      "message": "Dieses Repository benötigt ein dauerhaftes Verzeichnis innerhalb des Integrationsordners."
+    },
+    "marketplace_ambiguous": {
+      "message": "Mehrere Marketplace-Repositories verwalten diese Integration. Kläre den Konflikt vor der Übernahme."
+    },
+    "marketplace_busy": {
+      "message": "Der Marketplace installiert diese Integration gerade. Versuche es nach Abschluss erneut."
+    },
+    "marketplace_save_failed": {
+      "message": "Die Marketplace-Übernahme konnte nicht gespeichert werden. Die Integrationsdateien und die Einrichtung sind weiterhin vorhanden."
+    }
+  }
+}
