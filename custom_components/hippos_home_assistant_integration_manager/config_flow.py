@@ -180,6 +180,7 @@ class IntegrationManagerConfigFlow(ConfigFlow, domain=DOMAIN):
                     lambda: installer.install(
                         package, self._revision, adopt=exists and current is None, expected=current
                     ),
+                    integration_name=package.name,
                     first_install=not exists,
                 )
             except ManagerError as err:

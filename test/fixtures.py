@@ -21,13 +21,14 @@ def make_archive(
     root_layout: bool = False,
     config_flow: bool = False,
     domain: str = DOMAIN,
+    name: str = "Example Extension",
 ) -> bytes:
     """Build a snapshot with a loadable synthetic integration and a bundled asset."""
     root = "example-owner-example-repository-abcdef0"
     folder = root if root_layout else f"{root}/custom_components/{domain}"
     manifest = {
         "domain": domain,
-        "name": "Example Extension",
+        "name": name,
         "documentation": "https://example.com/extension",
         "version": version,
     }
