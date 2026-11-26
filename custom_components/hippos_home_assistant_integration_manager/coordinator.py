@@ -120,10 +120,12 @@ class ManagerCoordinator(DataUpdateCoordinator[UpdateData]):
     async def _async_apply(self, revision: Revision, installed: Installation) -> Installation:
         contents = await self.github.archive(revision.sha)
         packages = await self.hass.async_add_executor_job(read_packages, contents, self.domain)
+        package = packages[self.domain]
         # The installer rechecks the durable marker under its file lock.
         return await async_change_installation(
             self.hass, self.domain,
-            lambda: self.installer.install(packages[self.domain], revision, expected=installed),
+            lambda: self.installer.install(package, revision, expected=installed),
+            integration_name=package.name,
         )
 
     async def async_rollback(self, preview: UpdateData) -> None:
@@ -133,9 +135,11 @@ class ManagerCoordinator(DataUpdateCoordinator[UpdateData]):
                 self.data.installed != preview.installed or self.data.previous != preview.previous
             ):
                 raise ManagerError("installation_changed")
+            assert self.config_entry is not None
             installed = await async_change_installation(
                 self.hass, self.domain,
                 lambda: self.installer.rollback(preview.installed, preview.previous),
+                integration_name=self.config_entry.title,
             )
             self.async_set_updated_data(UpdateData(installed, preview.installed, None))
 

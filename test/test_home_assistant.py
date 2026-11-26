@@ -189,7 +189,9 @@ class HomeAssistantTests(IsolatedAsyncioTestCase):
     async def test_first_install_without_config_flow_requests_restart(self):
         await self._configure()
         self.assertNotIn(TARGET, await loader.async_get_config_flows(self.hass))
-        self.assertIn((DOMAIN, f"restart_{TARGET}"), ir.async_get(self.hass).issues)
+        issue = ir.async_get(self.hass).issues[(DOMAIN, f"restart_{TARGET}")]
+        self.assertEqual(issue.issue_domain, TARGET)
+        self.assertEqual(issue.translation_placeholders, {"integration": "Example Extension"})
 
     async def test_first_install_requests_restart_if_discovery_fails(self):
         self.archive.side_effect = None
@@ -223,6 +225,7 @@ class HomeAssistantTests(IsolatedAsyncioTestCase):
         self.assertEqual(self.hass.states.get(updates).attributes["installed_version"], FIRST.version)
 
         self.latest.return_value = SECOND
+        self.archive.side_effect = lambda sha: make_archive(SECOND.version, name="Renamed Extension")
         await coordinator.async_refresh()
         self.assertEqual(self.hass.states.get(updates).state, "on")
         self.assertEqual(self.hass.states.get(updates).attributes["latest_version"], SECOND.version)
@@ -244,7 +247,8 @@ class HomeAssistantTests(IsolatedAsyncioTestCase):
         self.archive.assert_awaited_with(SECOND.sha)
         self.assertEqual(self.hass.states.get(updates).state, "off")
         self.assertEqual((self.target / "blueprints/automation/example.yaml").read_text(), "1.1.0")
-        self.assertIn((DOMAIN, f"restart_{TARGET}"), ir.async_get(self.hass).issues)
+        issue = ir.async_get(self.hass).issues[(DOMAIN, f"restart_{TARGET}")]
+        self.assertEqual(issue.translation_placeholders, {"integration": "Renamed Extension"})
 
         self.latest.side_effect = ManagerError("cannot_connect")
         await coordinator.async_refresh()
@@ -260,6 +264,8 @@ class HomeAssistantTests(IsolatedAsyncioTestCase):
         self.assertEqual(self.archive.await_count, requests_before)
         self.assertTrue(coordinator.data.installed.paused)
         self.assertEqual((self.target / "blueprints/automation/example.yaml").read_text(), "1.0.0")
+        issue = ir.async_get(self.hass).issues[(DOMAIN, f"restart_{TARGET}")]
+        self.assertEqual(issue.translation_placeholders, {"integration": "Example Extension"})
 
         self.latest.side_effect = None
         result = await options.async_init(entry.entry_id)

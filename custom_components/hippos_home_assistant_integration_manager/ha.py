@@ -72,6 +72,7 @@ async def async_change_installation(
     domain: str,
     operation: Callable[[], Installation],
     *,
+    integration_name: str,
     first_install: bool = False,
 ) -> Installation:
     """Serialize the disk exchange and make fresh UI integrations discoverable."""
@@ -113,5 +114,5 @@ async def async_change_installation(
                     issue_domain=domain,
                     severity=ir.IssueSeverity.WARNING,
                     translation_key="restart_required",
-                    translation_placeholders={"integration": domain},
+                    translation_placeholders={"integration": integration_name},
                 )
