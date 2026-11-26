@@ -1,5 +1,12 @@
 # hippos-home-assistant-integration-manager
 
+## 0.1.6
+
+### Patch Changes
+
+- 6f0d86b: Show the replacement warning for existing integration files and confirm installation or migration directly with the action button.
+- 6f0d86b: Choose a GitHub token from another Manager entry or enter a new one during setup and token replacement.
+
 ## 0.1.5
 
 ### Patch Changes
