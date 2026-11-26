@@ -194,7 +194,21 @@
   "issues": {
     "restart_required": {
       "title": "Restart to load {integration}",
-      "description": "Restart Home Assistant to load the installed version of {integration}."
+      "fix_flow": {
+        "step": {
+          "confirm_restart": {
+            "title": "Restart to load {integration}",
+            "description": "Restart Home Assistant to load the installed version of {integration}.",
+            "submit": "Restart"
+          }
+        },
+        "error": {
+          "restart_failed": "Home Assistant could not restart. Check the system log for details."
+        },
+        "abort": {
+          "issue_resolved": "This restart notice is no longer active."
+        }
+      }
     }
   },
   "exceptions": {

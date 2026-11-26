@@ -22,7 +22,7 @@ The manager installs the selected `custom_components/<domain>/` tree. A reposito
 
 ## Update and roll back
 
-The manager checks daily by default. Use **Check for updates** on the config entry for an immediate check. Install an offered revision in Home Assistant's update view. HA shows a repair when you need to restart to load the new code.
+The manager checks daily by default. Use **Check for updates** on the config entry for an immediate check. Install an offered revision in Home Assistant's update view. When a restart is needed to load the new code, open the repair and select **Restart**.
 
 Home Assistant admins can read the GitHub release notes directly in the update dialog with their Home Assistant login. In development branch mode, the dialog shows the commit message instead.
 

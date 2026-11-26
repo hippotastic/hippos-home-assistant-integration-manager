@@ -5,7 +5,7 @@ from pathlib import Path
 import shutil
 from tempfile import TemporaryDirectory
 from unittest import IsolatedAsyncioTestCase
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 from aiohttp import ClientSession
 
@@ -15,6 +15,8 @@ from homeassistant import loader
 from homeassistant.auth.const import GROUP_ID_ADMIN, GROUP_ID_USER
 from homeassistant.bootstrap import async_from_config_dict
 from homeassistant.components import marketplace
+from homeassistant.components.homeassistant import async_set_stop_handler
+from homeassistant.components.homeassistant import services as core_services
 from homeassistant.components.marketplace import base as marketplace_base
 from homeassistant.components.marketplace.const import SIGNAL_REPOSITORY_INSTALLED
 from homeassistant.components.marketplace.repositories.integration import IntegrationRepository
@@ -37,6 +39,8 @@ from homeassistant.helpers import device_registry as dr, entity_registry as er, 
 from homeassistant.helpers.data_entry_flow import FlowManagerIndexView
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.storage import WriteError
+from homeassistant.helpers.translation import async_get_translations
+from homeassistant.setup import async_setup_component
 
 from custom_components.hippos_home_assistant_integration_manager import config_flow, coordinator, ha as manager_ha, takeover
 from custom_components.hippos_home_assistant_integration_manager.archive import read_packages
@@ -191,7 +195,47 @@ class HomeAssistantTests(IsolatedAsyncioTestCase):
         self.assertNotIn(TARGET, await loader.async_get_config_flows(self.hass))
         issue = ir.async_get(self.hass).issues[(DOMAIN, f"restart_{TARGET}")]
         self.assertEqual(issue.issue_domain, TARGET)
+        self.assertTrue(issue.is_fixable)
         self.assertEqual(issue.translation_placeholders, {"integration": "Example Extension"})
+
+    async def test_restart_repair_requires_confirmation_and_handles_restart_refusal(self):
+        await self._configure()
+        self.assertTrue(await async_setup_component(self.hass, "repairs", {}))
+        registry = ir.async_get(self.hass)
+        issue_id = f"restart_{TARGET}"
+        flow = self.hass.data["repairs"]["flow_manager"]
+        context = {"issue_id": issue_id}
+        # Exercise the real Core restart service without stopping the test instance.
+        stop = AsyncMock()
+        async_set_stop_handler(self.hass, stop)
+
+        form = await flow.async_init(DOMAIN, context=context)
+        self.assertEqual(form["step_id"], "confirm_restart")
+        self.assertEqual(form["data_schema"]({}), {})
+        self.assertEqual(form["description_placeholders"], {"integration": "Example Extension"})
+        translations = await async_get_translations(self.hass, "en", "issues", {DOMAIN})
+        submit_key = f"component.{DOMAIN}.issues.restart_required.fix_flow.step.confirm_restart.submit"
+        self.assertEqual(translations[submit_key], "Restart")
+        stop.assert_not_awaited()
+        flow.async_abort(form["flow_id"])
+        stop.assert_not_awaited()
+        self.assertIsNotNone(registry.async_get_issue(DOMAIN, issue_id))
+
+        form = await flow.async_init(DOMAIN, context=context)
+        with (
+            patch.object(core_services.conf_util, "async_check_ha_config_file", return_value="Invalid fixture"),
+            self.assertLogs(core_services.__name__, level="ERROR"),
+        ):
+            result = await flow.async_configure(form["flow_id"], {})
+        self.assertEqual(result["errors"], {"base": "restart_failed"})
+        self.assertIsNotNone(registry.async_get_issue(DOMAIN, issue_id))
+        stop.assert_not_awaited()
+
+        with patch.object(core_services.conf_util, "async_check_ha_config_file", return_value=None):
+            result = await flow.async_configure(form["flow_id"], {})
+        self.assertEqual(result["type"], "create_entry")
+        stop.assert_awaited_once_with(self.hass, True)
+        self.assertIsNone(registry.async_get_issue(DOMAIN, issue_id))
 
     async def test_first_install_requests_restart_if_discovery_fails(self):
         self.archive.side_effect = None
@@ -219,6 +263,9 @@ class HomeAssistantTests(IsolatedAsyncioTestCase):
     async def test_native_update_and_offline_rollback(self):
         entry = await self._configure()
         coordinator = entry.runtime_data
+        registry = ir.async_get(self.hass)
+        issue_id = f"restart_{TARGET}"
+        original_issue = registry.issues[(DOMAIN, issue_id)]
         updates = er.async_get(self.hass).async_get_entity_id("update", DOMAIN, TARGET)
         self.assertIsNotNone(updates)
         self.assertEqual(self.hass.states.get(updates).state, "off")
@@ -227,6 +274,7 @@ class HomeAssistantTests(IsolatedAsyncioTestCase):
         self.latest.return_value = SECOND
         self.archive.side_effect = lambda sha: make_archive(SECOND.version, name="Renamed Extension")
         await coordinator.async_refresh()
+        self.assertEqual(registry.issues[(DOMAIN, issue_id)].created, original_issue.created)
         self.assertEqual(self.hass.states.get(updates).state, "on")
         self.assertEqual(self.hass.states.get(updates).attributes["latest_version"], SECOND.version)
 
@@ -247,7 +295,8 @@ class HomeAssistantTests(IsolatedAsyncioTestCase):
         self.archive.assert_awaited_with(SECOND.sha)
         self.assertEqual(self.hass.states.get(updates).state, "off")
         self.assertEqual((self.target / "blueprints/automation/example.yaml").read_text(), "1.1.0")
-        issue = ir.async_get(self.hass).issues[(DOMAIN, f"restart_{TARGET}")]
+        issue = registry.issues[(DOMAIN, issue_id)]
+        self.assertGreater(issue.created, original_issue.created)
         self.assertEqual(issue.translation_placeholders, {"integration": "Renamed Extension"})
 
         self.latest.side_effect = ManagerError("cannot_connect")
@@ -264,8 +313,9 @@ class HomeAssistantTests(IsolatedAsyncioTestCase):
         self.assertEqual(self.archive.await_count, requests_before)
         self.assertTrue(coordinator.data.installed.paused)
         self.assertEqual((self.target / "blueprints/automation/example.yaml").read_text(), "1.0.0")
-        issue = ir.async_get(self.hass).issues[(DOMAIN, f"restart_{TARGET}")]
-        self.assertEqual(issue.translation_placeholders, {"integration": "Example Extension"})
+        restored_issue = registry.issues[(DOMAIN, issue_id)]
+        self.assertGreater(restored_issue.created, issue.created)
+        self.assertEqual(restored_issue.translation_placeholders, {"integration": "Example Extension"})
 
         self.latest.side_effect = None
         result = await options.async_init(entry.entry_id)

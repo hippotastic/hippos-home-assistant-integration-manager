@@ -3,6 +3,7 @@
 import re
 
 DOMAIN = "hippos_home_assistant_integration_manager"
+RESTART_ISSUE_PREFIX = "restart_"
 
 CONF_REPOSITORY = "repository"
 CONF_REPOSITORY_ID = "repository_id"

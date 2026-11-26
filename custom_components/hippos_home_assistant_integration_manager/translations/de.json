@@ -194,7 +194,21 @@
   "issues": {
     "restart_required": {
       "title": "Neustart zum Laden von {integration}",
-      "description": "Starte Home Assistant neu, um die installierte Version von {integration} zu laden."
+      "fix_flow": {
+        "step": {
+          "confirm_restart": {
+            "title": "Neustart zum Laden von {integration}",
+            "description": "Starte Home Assistant neu, um die installierte Version von {integration} zu laden.",
+            "submit": "Neu starten"
+          }
+        },
+        "error": {
+          "restart_failed": "Home Assistant konnte nicht neu starten. Details stehen im Systemprotokoll."
+        },
+        "abort": {
+          "issue_resolved": "Diese Neustartmeldung ist nicht mehr aktiv."
+        }
+      }
     }
   },
   "exceptions": {
