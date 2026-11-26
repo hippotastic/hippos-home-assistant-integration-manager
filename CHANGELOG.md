@@ -1,5 +1,11 @@
 # hippos-home-assistant-integration-manager
 
+## 0.1.7
+
+### Patch Changes
+
+- 8151db8: Show the integration's display name in Home Assistant restart notices.
+
 ## 0.1.6
 
 ### Patch Changes
