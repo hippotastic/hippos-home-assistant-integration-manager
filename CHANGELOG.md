@@ -1,5 +1,11 @@
 # hippos-home-assistant-integration-manager
 
+## 0.1.8
+
+### Patch Changes
+
+- 3632bff: Add a Restart button to repairs that require a Home Assistant restart. Replace an older restart notice when a different version has been installed so the displayed time reflects that installation.
+
 ## 0.1.7
 
 ### Patch Changes
