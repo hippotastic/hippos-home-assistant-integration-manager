@@ -5,6 +5,7 @@
         "title": "GitHub-Repository verbinden",
         "data": {
           "repository": "GitHub-Repository",
+          "token_source": "Quelle des GitHub-Tokens",
           "token": "GitHub-Token mit Lesezugriff",
           "branch": "Entwicklungsbranch"
         },
@@ -20,31 +21,34 @@
       },
       "confirm": {
         "title": "Integration installieren",
-        "description": "{integration} ({domain}) aus {repository}, Version {version}, Commit {commit}.\n\nVorhandenes Verzeichnis zur Übernahme und Ersetzung: {existing}. Home Assistant behält die bestehende Integrationskonfiguration.",
-        "data": {
-          "confirm": "Installation bestätigen"
-        }
+        "description": "{integration} ({domain}) aus {repository}, Version {version}, Commit {commit}.",
+        "submit": "Installieren"
+      },
+      "confirm_replace": {
+        "title": "Integrationsdateien ersetzen",
+        "description": "{integration} ({domain}) aus {repository}, Version {version}, Commit {commit}.\n\nDer Manager ersetzt die Dateien in {existing} und verwendet die bestehende Home-Assistant-Konfiguration.",
+        "submit": "Migrieren"
       },
       "reauth_confirm": {
         "title": "GitHub-Token ersetzen",
-        "description": "Gib einen neuen Token mit Lesezugriff für {repository} ein.",
+        "description": "Aktualisiere den GitHub-Token für {repository}.",
         "data": {
+          "token_source": "Quelle des GitHub-Tokens",
           "token": "GitHub-Token mit Lesezugriff"
         }
       },
       "reconfigure": {
         "title": "GitHub-Token ersetzen",
-        "description": "Gib einen neuen Token mit Lesezugriff für {repository} ein.",
+        "description": "Aktualisiere den GitHub-Token für {repository}.",
         "data": {
+          "token_source": "Quelle des GitHub-Tokens",
           "token": "GitHub-Token mit Lesezugriff"
         }
       },
       "takeover": {
         "title": "Vom Marketplace übernehmen",
         "description": "{integration} {version} ist über {marketplace_repository} installiert. Übernimm diese Version mit ihrer bestehenden Home-Assistant-Einrichtung und verwende {repository} für künftige Updates.",
-        "data": {
-          "confirm": "Vom Marketplace übernehmen"
-        }
+        "submit": "Migrieren"
       }
     },
     "error": {
@@ -66,6 +70,7 @@
       "release_missing": "Es gibt kein veröffentlichtes stabiles Release oder der Token kann es nicht lesen.",
       "repository_changed": "Die Identität des GitHub-Repositorys hat sich geändert.",
       "repository_inaccessible": "Der Token hat keinen Zugriff auf dieses GitHub-Repository.",
+      "token_source_unavailable": "Für den gewählten Eintrag ist kein Token mehr verfügbar. Wähle einen anderen Eintrag oder gib einen neuen Token ein.",
       "unsafe_archive": "Das Archiv enthält einen unsicheren Pfad, Dateityp oder eine unzulässige Größe.",
       "home_assistant_too_old": "Dieses Release benötigt eine neuere Version von Home Assistant.",
       "invalid_repository_metadata": "Das Repository enthält eine ungültige hacs.json-Datei.",
@@ -163,6 +168,11 @@
     }
   },
   "selector": {
+    "token_source": {
+      "options": {
+        "new": "Neuen Token eingeben"
+      }
+    },
     "check_interval": {
       "options": {
         "0": "Manuell",

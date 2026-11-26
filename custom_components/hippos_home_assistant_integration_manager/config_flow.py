@@ -2,6 +2,7 @@
 
 from typing import Any
 
+import probatio
 import voluptuous as vol
 
 from homeassistant.config_entries import (
@@ -14,11 +15,13 @@ from homeassistant.config_entries import (
 )
 from homeassistant.const import CONF_TOKEN
 from homeassistant.core import callback
+from homeassistant.data_entry_flow import Optional, Required
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
     SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
+    SelectSelectorMode,
     TextSelector,
     TextSelectorConfig,
     TextSelectorType,
@@ -44,6 +47,8 @@ from .installer import Installer
 from .models import Installation, ManagerError, Package, Revision
 
 _CONFIRM = "confirm"
+_TOKEN_SOURCE = "token_source"
+_NEW_TOKEN = "new"
 _PASSWORD = TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD))
 
 
@@ -69,10 +74,11 @@ class IntegrationManagerConfigFlow(ConfigFlow, domain=DOMAIN):
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         """Check access and discover integrations at a pinned commit."""
+        token_entries = self._token_entries()
         errors = {}
         if user_input is not None:
             try:
-                self._token = user_input[CONF_TOKEN].strip()
+                self._token = self._resolve_token(user_input, token_entries)
                 self._branch = normalize_branch(user_input.get(CONF_BRANCH, ""))
                 self._github = GitHub(
                     async_get_clientsession(self.hass), user_input[CONF_REPOSITORY], self._token
@@ -98,11 +104,11 @@ class IntegrationManagerConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema(
+            data_schema=probatio.Schema(
                 {
-                    vol.Required(CONF_REPOSITORY): str,
-                    vol.Required(CONF_TOKEN): _PASSWORD,
-                    vol.Optional(CONF_BRANCH): str,
+                    Required(CONF_REPOSITORY): str,
+                    **self._token_fields(token_entries),
+                    Optional(CONF_BRANCH): str,
                 }
             ),
             errors=errors,
@@ -135,7 +141,19 @@ class IntegrationManagerConfigFlow(ConfigFlow, domain=DOMAIN):
         )
 
     async def async_step_confirm(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
-        """Confirm the exact version, including explicit replacement of existing files."""
+        """Review the selected integration before installing it."""
+        return await self._async_confirm_installation(user_input, replacing=False)
+
+    async def async_step_confirm_replace(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Ask for explicit consent to replace existing integration files."""
+        return await self._async_confirm_installation(user_input, replacing=True)
+
+    async def _async_confirm_installation(
+        self, user_input: dict[str, Any] | None, *, replacing: bool
+    ) -> ConfigFlowResult:
+        """Install only if the confirmation matches the previewed directory state."""
         try:
             if user_input is None:
                 if marketplace_owner(self.hass, self._domain) is not None:
@@ -150,9 +168,9 @@ class IntegrationManagerConfigFlow(ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason=err.key)
 
         name, version = self._integrations[self._domain]
-        if user_input is not None and user_input[_CONFIRM]:
+        if user_input is not None:
             try:
-                if (exists, current) != self._installation_preview:
+                if exists != replacing or (exists, current) != self._installation_preview:
                     raise ManagerError("installation_changed")
                 if await self._github.repository_id() != self._repository_id:
                     raise ManagerError("repository_changed")
@@ -169,17 +187,20 @@ class IntegrationManagerConfigFlow(ConfigFlow, domain=DOMAIN):
             return self._create_installation_entry()
 
         self._installation_preview = (exists, current)
+        placeholders = {
+            "repository": self._github.repository,
+            "integration": name,
+            "domain": self._domain,
+            "version": version,
+            "commit": self._revision.sha[:12],
+        }
+        if exists:
+            placeholders["existing"] = f"custom_components/{self._domain}"
+
         return self.async_show_form(
-            step_id="confirm",
-            data_schema=vol.Schema({vol.Required(_CONFIRM, default=False): bool}),
-            description_placeholders={
-                "repository": self._github.repository,
-                "integration": name,
-                "domain": self._domain,
-                "version": version,
-                "commit": self._revision.sha[:12],
-                "existing": f"custom_components/{self._domain}" if exists else "—",
-            },
+            step_id="confirm_replace" if exists else "confirm",
+            data_schema=vol.Schema({}),
+            description_placeholders=placeholders,
         )
 
     async def async_step_takeover(
@@ -195,7 +216,7 @@ class IntegrationManagerConfigFlow(ConfigFlow, domain=DOMAIN):
             installer = Installer(self.hass.config.config_dir, self._domain, self._repository_id)
             version = await self.hass.async_add_executor_job(installer.takeover_version)
             consent = {"id": owner.data.id, "version": version}
-            if user_input is not None and user_input[_CONFIRM]:
+            if user_input is not None:
                 if consent != self._takeover_preview:
                     raise ManagerError("installation_changed")
                 if await self._github.repository_id() != self._repository_id:
@@ -207,7 +228,7 @@ class IntegrationManagerConfigFlow(ConfigFlow, domain=DOMAIN):
         self._takeover_preview = consent
         return self.async_show_form(
             step_id="takeover",
-            data_schema=vol.Schema({vol.Required(_CONFIRM, default=False): bool}),
+            data_schema=vol.Schema({}),
             description_placeholders={
                 "integration": self._integrations[self._domain][0],
                 "version": version,
@@ -259,10 +280,11 @@ class IntegrationManagerConfigFlow(ConfigFlow, domain=DOMAIN):
     async def _async_token_form(
         self, entry: ConfigEntry, step: str, user_input: dict[str, Any] | None
     ) -> ConfigFlowResult:
+        token_entries = self._token_entries(exclude_entry_id=entry.entry_id)
         errors = {}
         if user_input is not None:
             try:
-                token = user_input[CONF_TOKEN].strip()
+                token = self._resolve_token(user_input, token_entries)
                 github = GitHub(async_get_clientsession(self.hass), entry.data[CONF_REPOSITORY], token)
                 if await github.repository_id() != entry.data[CONF_REPOSITORY_ID]:
                     raise ManagerError("repository_changed")
@@ -274,10 +296,52 @@ class IntegrationManagerConfigFlow(ConfigFlow, domain=DOMAIN):
 
         return self.async_show_form(
             step_id=step,
-            data_schema=vol.Schema({vol.Required(CONF_TOKEN): _PASSWORD}),
+            data_schema=probatio.Schema(self._token_fields(token_entries)),
             description_placeholders={"repository": entry.data[CONF_REPOSITORY]},
             errors=errors,
         )
+
+    @callback
+    def _token_entries(self, exclude_entry_id: str | None = None) -> dict[str, ConfigEntry]:
+        return {
+            entry.entry_id: entry
+            for entry in self.hass.config_entries.async_entries(DOMAIN)
+            if entry.entry_id != exclude_entry_id and entry.data.get(CONF_TOKEN)
+        }
+
+    @staticmethod
+    def _token_fields(entries: dict[str, ConfigEntry]) -> dict[Required, SelectSelector | TextSelector]:
+        if not entries:
+            return {Required(CONF_TOKEN): _PASSWORD}
+        return {
+            Required(_TOKEN_SOURCE, default=_NEW_TOKEN): SelectSelector(
+                SelectSelectorConfig(
+                    mode=SelectSelectorMode.DROPDOWN,
+                    translation_key=_TOKEN_SOURCE,
+                    options=[
+                        SelectOptionDict(label="Enter a new token", value=_NEW_TOKEN),
+                        *(
+                            SelectOptionDict(
+                                label=f"{entry.title} ({entry.data[CONF_REPOSITORY]})",
+                                value=entry_id,
+                            )
+                            for entry_id, entry in entries.items()
+                        ),
+                    ],
+                )
+            ),
+            Required(CONF_TOKEN, visible={"field": _TOKEN_SOURCE, "value": _NEW_TOKEN}): _PASSWORD,
+        }
+
+    @staticmethod
+    def _resolve_token(user_input: dict[str, Any], entries: dict[str, ConfigEntry]) -> str:
+        source = user_input.get(_TOKEN_SOURCE, _NEW_TOKEN)
+        if source == _NEW_TOKEN:
+            return user_input[CONF_TOKEN].strip()
+        # The source entry may have been removed since the selector was shown.
+        if (entry := entries.get(source)) is None:
+            raise ManagerError("token_source_unavailable")
+        return entry.data[CONF_TOKEN]
 
 
 class IntegrationManagerOptionsFlow(OptionsFlowWithReload):

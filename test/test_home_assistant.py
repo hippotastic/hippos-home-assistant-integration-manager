@@ -23,10 +23,18 @@ from homeassistant.components.marketplace.utils.storage import (
     get_storage_for_key,
 )
 from homeassistant.components.update import UpdateEntityFeature, websocket_release_notes
-from homeassistant.config_entries import ConfigEntry, ConfigEntryState, SOURCE_RECONFIGURE, SOURCE_USER
+from homeassistant.config_entries import (
+    ConfigEntry,
+    ConfigEntryDisabler,
+    ConfigEntryState,
+    SOURCE_REAUTH,
+    SOURCE_RECONFIGURE,
+    SOURCE_USER,
+)
 from homeassistant.core import Context, CoreState, HomeAssistant
 from homeassistant.exceptions import Unauthorized
 from homeassistant.helpers import device_registry as dr, entity_registry as er, issue_registry as ir
+from homeassistant.helpers.data_entry_flow import FlowManagerIndexView
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.storage import WriteError
 
@@ -138,9 +146,11 @@ class HomeAssistantTests(IsolatedAsyncioTestCase):
         result = await self._start_flow()
         self.assertEqual(result.get("step_id"), "confirm", result)
         self.assertFalse(self.target.exists())
+        self.assertNotIn("existing", result["description_placeholders"])
+        self.assertEqual(result["data_schema"]({}), {})
         self.assertNotIn(TOKEN, repr(result))
         result = await self.hass.config_entries.flow.async_configure(
-            result["flow_id"], {"confirm": True}
+            result["flow_id"], {}
         )
         self.assertEqual(result["type"], "create_entry", result)
         entry = result["result"]
@@ -291,12 +301,54 @@ class HomeAssistantTests(IsolatedAsyncioTestCase):
         self.assertIsNone(state.attributes["release_url"])
         self.assertEqual(state.attributes["supported_features"], UpdateEntityFeature.INSTALL)
 
+    async def test_confirmation_offers_explicit_replacement_for_existing_files(self):
+        installed = read_packages(make_archive(SECOND.version))[TARGET]
+        self.target.mkdir()
+        (self.target / "manifest.json").write_bytes(installed.files["manifest.json"])
+        local_file = self.target / "local.py"
+        local_file.write_text("# existing installation")
+
+        result = await self._start_flow()
+        self.assertEqual(result.get("step_id"), "confirm_replace", result)
+        self.assertEqual(result["data_schema"]({}), {})
+        self.assertEqual(
+            result["description_placeholders"]["existing"], f"custom_components/{TARGET}"
+        )
+        self.assertTrue(local_file.exists())
+        result = await self.hass.config_entries.flow.async_configure(
+            result["flow_id"], {}
+        )
+        self.assertEqual(result["type"], "create_entry", result)
+        self.assertFalse(local_file.exists())
+        self.assertEqual((self.target / "blueprints/automation/example.yaml").read_text(), FIRST.version)
+
+    async def test_fresh_confirmation_cannot_replace_directory_added_after_preview(self):
+        result = await self._start_flow()
+        self.assertEqual(result.get("step_id"), "confirm", result)
+        self.target.mkdir()
+        local_file = self.target / "local.py"
+        local_file.write_text("# appeared after confirmation")
+
+        result = await self.hass.config_entries.flow.async_configure(
+            result["flow_id"], {}
+        )
+        self.assertEqual(result["reason"], "installation_changed")
+        self.assertEqual(local_file.read_text(), "# appeared after confirmation")
+
+    async def test_closing_install_confirmation_aborts_before_installing(self):
+        result = await self._start_flow()
+        self.assertEqual(result.get("step_id"), "confirm", result)
+        self.hass.config_entries.flow.async_abort(result["flow_id"])
+
+        self.assertFalse(self.target.exists())
+        self.assertEqual(self.hass.config_entries.async_entries(DOMAIN), [])
+
     async def test_confirmation_refuses_changed_repository_identity(self):
         result = await self._start_flow()
         self.assertEqual(result.get("step_id"), "confirm", result)
         self.repository_id.return_value = REPOSITORY_ID + 1
         result = await self.hass.config_entries.flow.async_configure(
-            result["flow_id"], {"confirm": True}
+            result["flow_id"], {}
         )
         self.assertEqual(result["reason"], "repository_changed")
         self.assertFalse(self.target.exists())
@@ -308,6 +360,7 @@ class HomeAssistantTests(IsolatedAsyncioTestCase):
         self.latest.return_value = SECOND
         result = await self._start_flow()
         self.assertEqual(result.get("step_id"), "takeover", result)
+        self.assertEqual(result["data_schema"]({}), {})
         self.assertEqual(result["description_placeholders"]["version"], FIRST.version)
         self.assertTrue(repository.data.installed)
         self.assertIsNotNone(self.hass.states.get(old_update))
@@ -319,7 +372,7 @@ class HomeAssistantTests(IsolatedAsyncioTestCase):
             name="Another Marketplace repository",
         )
         result = await self.hass.config_entries.flow.async_configure(
-            result["flow_id"], {"confirm": True}
+            result["flow_id"], {}
         )
         managed = result["result"]
         await self.hass.async_block_till_done()
@@ -361,7 +414,7 @@ class HomeAssistantTests(IsolatedAsyncioTestCase):
         result = await self._start_flow()
         self.assertEqual(result.get("step_id"), "takeover", result)
         result = await self.hass.config_entries.flow.async_configure(
-            result["flow_id"], {"confirm": True}
+            result["flow_id"], {}
         )
         self.assertIs(result["result"].state, ConfigEntryState.LOADED, result["result"].reason)
         self.assertIs(self.market.repositories.get_by_id(repository.data.id), repository)
@@ -388,7 +441,7 @@ class HomeAssistantTests(IsolatedAsyncioTestCase):
 
         with patch.object(type(repository_store), "_async_write_data", fail_once):
             result = await self.hass.config_entries.flow.async_configure(
-                result["flow_id"], {"confirm": True}
+                result["flow_id"], {}
             )
         managed = result["result"]
         self.assertIs(managed.state, ConfigEntryState.SETUP_RETRY, managed.reason)
@@ -419,7 +472,7 @@ class HomeAssistantTests(IsolatedAsyncioTestCase):
             side_effect=ManagerError("marketplace_save_failed"),
         ):
             result = await self.hass.config_entries.flow.async_configure(
-                result["flow_id"], {"confirm": True}
+                result["flow_id"], {}
             )
         managed = result["result"]
         self.assertIs(managed.state, ConfigEntryState.SETUP_RETRY)
@@ -444,11 +497,89 @@ class HomeAssistantTests(IsolatedAsyncioTestCase):
             DOMAIN, context={"source": SOURCE_RECONFIGURE, "entry_id": entry.entry_id}
         )
         self.assertEqual(result.get("step_id"), "reconfigure", result)
+        self.assertEqual([str(field) for field in result["data_schema"].schema], ["token"])
         new_token = "github_pat_" + "b" * 40
         result = await flow.async_configure(result["flow_id"], {"token": new_token})
         self.assertEqual(result["reason"], "reconfigure_successful")
         self.assertEqual(entry.data["token"], new_token)
         self.assertEqual(self.archive.await_count, 2)
+
+    async def test_setup_reuses_token_from_another_entry(self):
+        source = await self._configure()
+        flow = self.hass.config_entries.flow
+        result = await flow.async_init(DOMAIN, context={"source": SOURCE_USER})
+        fields = {
+            field["name"]: field
+            for field in FlowManagerIndexView(flow)._prepare_result_json(result)["data_schema"]
+        }
+        select = fields["token_source"]["selector"]["select"]
+        self.assertEqual(fields["token_source"]["default"], "new")
+        self.assertEqual(select["translation_key"], "token_source")
+        self.assertEqual(
+            select["options"][1],
+            {"label": f"{source.title} ({REPOSITORY})", "value": source.entry_id},
+        )
+        self.assertEqual(fields["token"]["visible"], {"field": "token_source", "value": "new"})
+        self.assertNotIn(TOKEN, repr(fields))
+
+        form = {"repository": "example-owner/second-repository", "token_source": source.entry_id}
+        self.repository_id.side_effect = ManagerError("repository_inaccessible")
+        result = await flow.async_configure(result["flow_id"], form)
+        self.assertEqual(result["errors"]["base"], "repository_inaccessible")
+        self.assertEqual(self.hass.config_entries.async_entries(DOMAIN), [source])
+
+        self.repository_id.side_effect = None
+        self.repository_id.return_value = REPOSITORY_ID + 1
+        self.archive.side_effect = lambda sha: make_archive(
+            FIRST.version, domain="example_other_extension"
+        )
+        result = await flow.async_configure(result["flow_id"], {**form, "token": "ignored"})
+        self.assertEqual(result["step_id"], "confirm")
+        result = await flow.async_configure(result["flow_id"], {})
+        self.assertEqual(result["type"], "create_entry")
+        self.assertEqual(result["result"].data["token"], TOKEN)
+        self.assertNotIn("token_source", result["result"].data)
+
+    async def test_token_replacement_can_use_another_entry_or_a_new_token(self):
+        entry = await self._configure()
+        other_token = "github_pat_" + "b" * 40
+        other = ConfigEntry(
+            version=1, minor_version=1, domain=DOMAIN, title="Other extension",
+            data={**entry.data, "repository": "example-owner/other-repository", "token": other_token},
+            options={}, source=SOURCE_USER, unique_id="example_other_extension",
+            discovery_keys={}, subentries_data=[], disabled_by=ConfigEntryDisabler.USER,
+        )
+        await self.hass.config_entries.async_add(other)
+        flow = self.hass.config_entries.flow
+        result = await flow.async_init(
+            DOMAIN, context={"source": SOURCE_RECONFIGURE, "entry_id": entry.entry_id}
+        )
+        fields = FlowManagerIndexView(flow)._prepare_result_json(result)["data_schema"]
+        self.assertEqual(
+            [option["value"] for option in fields[0]["selector"]["select"]["options"]],
+            ["new", other.entry_id],
+        )
+        result = await flow.async_configure(result["flow_id"], {"token_source": other.entry_id})
+        self.assertEqual(result["reason"], "reconfigure_successful")
+        self.assertEqual(entry.data["token"], other_token)
+
+        result = await flow.async_init(
+            DOMAIN, context={"source": SOURCE_REAUTH, "entry_id": entry.entry_id}, data=entry.data
+        )
+        self.assertEqual(result["step_id"], "reauth_confirm")
+        result = await flow.async_configure(result["flow_id"], {"token_source": "new", "token": TOKEN})
+        self.assertEqual(result["reason"], "reauth_successful")
+        self.assertEqual(entry.data["token"], TOKEN)
+        self.assertEqual(other.data["token"], other_token)
+
+        result = await flow.async_init(
+            DOMAIN, context={"source": SOURCE_RECONFIGURE, "entry_id": entry.entry_id}
+        )
+        await self.hass.config_entries.async_remove(other.entry_id)
+        result = await flow.async_configure(result["flow_id"], {"token_source": other.entry_id})
+        self.assertEqual(result["errors"]["base"], "token_source_unavailable")
+        self.assertEqual([str(field) for field in result["data_schema"].schema], ["token"])
+        self.assertEqual(entry.data["token"], TOKEN)
 
     async def test_automatic_settings_require_stable_polling(self):
         entry = await self._configure()

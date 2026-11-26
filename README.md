@@ -8,8 +8,8 @@ Requires Home Assistant 2026.11 or later. Open **Settings → Marketplace → Ad
 
 ## Add a managed integration
 
-1. Create a [fine-grained GitHub token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) for the selected repository with **Contents: Read-only**. Give each Home Assistant installation its own token so you can revoke access independently.
-2. In **Settings → Devices & services → Add integration**, choose **Hippo's Integration Manager** and enter the repository and token. Leave **Development branch** empty to use the default release mode.
+1. If you need a new token, create a [fine-grained GitHub token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens) for the selected repository with **Contents: Read-only**. Give each Home Assistant installation its own token so you can revoke access independently.
+2. In **Settings → Devices & services → Add integration**, choose **Hippo's Integration Manager** and enter the repository. Enter a new token or select another Manager entry whose token can access that repository. Leave **Development branch** empty to use the default release mode.
 3. Review the integration and version in the confirmation dialog. For a Marketplace installation, use [Take over from Marketplace](#take-over-an-existing-installation) to keep the current version.
 4. For a first install with a setup dialog, return to **Add integration** and set it up. If Home Assistant needs a restart, the manager shows a repair under **Settings → System → Repairs**.
 
@@ -28,7 +28,7 @@ Home Assistant admins can read the GitHub release notes directly in the update d
 
 Use the config entry's options to change the check interval, select a development branch, or enable automatic installation of stable releases. The first check after startup, options changes, or resuming updates only reports the available version.
 
-To rotate a GitHub token, choose **Reconfigure** from the config entry menu. Home Assistant also offers reauthentication if GitHub rejects the existing token.
+To rotate a GitHub token, choose **Reconfigure** from the config entry menu. Home Assistant also offers reauthentication if GitHub rejects the existing token. In both dialogs you can enter a new token or copy one from another Manager entry. Each entry stores its own copy, so rotating a token in one entry affects only that entry.
 
 Once two managed versions have been installed, the options menu can restore the previous one from disk. A rollback pauses update checks until you resume them. The manager retains one previous installation. Removing the manager's config entry leaves the managed integration files and the retained copy on disk.
 
