@@ -19,7 +19,7 @@ from homeassistant.loader import (
     async_get_loaded_integration,
 )
 
-from .const import DOMAIN
+from .const import DOMAIN, RESTART_ISSUE_PREFIX
 from .models import Installation, ManagerError
 
 _LOGGER = logging.getLogger(__name__)
@@ -106,11 +106,14 @@ async def async_change_installation(
             raise
         finally:
             if restart_required and job.done() and not job.cancelled() and job.exception() is None:
+                issue_id = f"{RESTART_ISSUE_PREFIX}{domain}"
+                # The installed version supersedes the previous restart notice.
+                ir.async_delete_issue(hass, DOMAIN, issue_id)
                 ir.async_create_issue(
                     hass,
                     DOMAIN,
-                    f"restart_{domain}",
-                    is_fixable=False,
+                    issue_id,
+                    is_fixable=True,
                     issue_domain=domain,
                     severity=ir.IssueSeverity.WARNING,
                     translation_key="restart_required",
